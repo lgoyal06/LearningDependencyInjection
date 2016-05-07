@@ -1,4 +1,4 @@
-package com.lalit.api.di.design;
+package com.lalit.api.di.design.core.context;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -16,11 +16,6 @@ public class DIContext {
 	private static final Map<String, Class<?>> mapOfBeansClassObject = new LinkedHashMap<>();
 	private static final Map<String, Object> mapOfBeansInstance = new LinkedHashMap<>();
 
-	public static void main(String... s) throws Exception {
-		DIContext context = new DIContext();
-		System.out.println();
-	}
-
 	public Object getBean(String beanId) {
 		return mapOfBeansClassObject.get(beanId);
 	}
@@ -29,7 +24,7 @@ public class DIContext {
 			IllegalAccessException, InstantiationException {
 		try {
 			Document doc = new Builder().build(new File(
-					"C:\\Users\\lalit goyal\\git\\LearningDependencyInjection\\src\\main\\java\\com\\lalit\\api\\di\\design\\setterInjection\\Config_file.xml"));
+					"C:\\Users\\lalit goyal\\git\\LearningDependencyInjection\\src\\main\\java\\com\\lalit\\api\\di\\design\\setterInjection\\example\\Config_file.xml"));
 
 			Nodes beansNode = doc.query("//beans//bean");
 

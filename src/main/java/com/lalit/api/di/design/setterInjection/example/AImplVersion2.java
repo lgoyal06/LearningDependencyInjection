@@ -1,4 +1,4 @@
-package com.lalit.api.di.design.setterInjection;
+package com.lalit.api.di.design.setterInjection.example;
 
 public class AImplVersion2 implements AInterface {
 
