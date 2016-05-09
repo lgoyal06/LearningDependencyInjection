@@ -17,22 +17,30 @@
 		<name>com.lalit.api.di.design.setterInjection.example.AImplVersion2</name>
 		<SetterInjection>
 			<property id="x" dataType="int" value="10" />
-			<!-- TODO: Add functionality to have list and map property
+			<!-- TODO Handle for ArrayList, Set and Map
 			<property id="listExample" dataType="list">
-				<list type="arraylist" elementDataType="object">
+				<list name="java.lang.ArrayList" elementDataType="Object">
+					<element>value</element>
+					<element>value</element>
+					<element>value</element>
+				</list>
+			</property>
+			<property id="setExample" dataType="set">
+				<list name="java.lang.HashSet" elementDataType="Object">
 					<element>value</element>
 					<element>value</element>
 					<element>value</element>
 				</list>
 			</property>
 			<property id="mapExample" dataType="map" value="10">
-				<map type="hashMap" keyDataType="" valueDataType="">
-					<entry key="">value</entry>
-					<entry key="">value</entry>
-					<entry key="">value</entry>
+				<map type="java.lang.HashMap" keyDataType="String"
+					valueDataType="String">
+					<entry key="A">value</entry>
+					<entry key="B">value</entry>
+					<entry key="C">value</entry>
 				</map>
 			</property>
-			  TODO: Add functionality to have list and map property -->
+			  TODO Handle for ArrayList, Set and Map -->
 		</SetterInjection>
 	</bean>
 	<bean id="cImplVersion1">

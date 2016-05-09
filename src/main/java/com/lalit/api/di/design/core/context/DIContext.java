@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Stack;
 
 import nu.xom.Builder;
 import nu.xom.Document;
@@ -17,14 +18,23 @@ public class DIContext {
 	private static final Map<String, Object> mapOfBeansInstance = new LinkedHashMap<>();
 
 	public Object getBean(String beanId) {
-		return mapOfBeansClassObject.get(beanId);
+		return mapOfBeansInstance.get(beanId);
 	}
 
-	public DIContext() throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException,
-			IllegalAccessException, InstantiationException {
+	public static void main(String... s) {
 		try {
-			Document doc = new Builder().build(new File(
-					"C:\\Users\\lalit goyal\\git\\LearningDependencyInjection\\src\\main\\java\\com\\lalit\\api\\di\\design\\setterInjection\\example\\Config_file.xml"));
+			new DIContext();
+			System.out.println();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/** Using for Setter Injection **/
+	public DIContext(String configFilePath) throws ClassNotFoundException, NoSuchFieldException, SecurityException,
+			IllegalArgumentException, IllegalAccessException, InstantiationException {
+		try {
+			Document doc = new Builder().build(new File(configFilePath));
 
 			Nodes beansNode = doc.query("//beans//bean");
 
@@ -59,6 +69,63 @@ public class DIContext {
 		}
 	}
 
+	/**
+	 * 
+	 * Used for Constructor Dependency injection
+	 * 
+	 **/
+	public DIContext() throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException,
+			IllegalAccessException, InstantiationException {
+		try {
+			Document doc = new Builder().build(new File(
+					"C:\\Users\\lalit goyal\\git\\LearningDependencyInjection\\src\\main\\java\\com\\lalit\\api\\di\\design\\constructorInjection\\Config_file_constructor_injection.xml"));
+
+			Nodes beansNode = doc.query("//beans//bean");
+			Stack<Element> s = new Stack<>();
+			s.push((Element) beansNode.get(0));
+			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
+				getBeanObject(doc, beansNode, s, parentClassIndex);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * This will be recursive function that will keep on calling itself until it
+	 * gets all constructor dependency for a bean We will need to LIFO data
+	 * structure. Tree Traverse will be Post -order (Left-Right-Root)
+	 * 
+	 **/
+	private void getBeanObject(Document doc, Nodes beansNode, Stack<Element> s, int parentClassIndex) {
+		Element element = null;
+		if (s.size() > 1) {
+			element = s.peek();
+		} else {
+			element = (Element) beansNode.get(parentClassIndex);
+		}
+
+		if (element.getLocalName().equals("bean")) {
+			Elements constructorInjection = getConstructorInjectionElements(element, parentClassIndex);
+			for (int i = 0; i < constructorInjection.size(); ++i)
+				s.push(constructorInjection.get(i));
+		} else if (((Element) element.getParent()).getLocalName().equals("ConstructorInjection")
+				&& element.getLocalName().equals("property")) {
+			Nodes beansNode1 = doc
+					.query("//beans//bean[attribute::id='" + (element).getAttributeValue("value-ref") + "']");
+			Elements constructorInjection = getConstructorInjectionElements((Element) beansNode1.get(0),
+					parentClassIndex);
+			if (constructorInjection != null) {
+				for (int i = 0; i < constructorInjection.size(); ++i)
+					s.push(constructorInjection.get(i));
+			} else {
+				s.pop();
+
+			}
+		}
+	}
+
 	private void setFieldValue(Map.Entry<String, Class<?>> entry, Object parentClassInstance, String valueRefAttValue,
 			String idAttValue, String dataTypeAttValue, String valueAttValue)
 					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
@@ -78,6 +145,15 @@ public class DIContext {
 			setterInjections = element.getFirstChildElement("SetterInjection").getChildElements("property");
 		}
 		return setterInjections;
+	}
+
+	private Elements getConstructorInjectionElements(Element element, int index) {
+		Elements constructorInjections = null;
+		if (element.getFirstChildElement("ConstructorInjection") != null
+				&& element.getFirstChildElement("ConstructorInjection").getChildElements("property") != null) {
+			constructorInjections = element.getFirstChildElement("ConstructorInjection").getChildElements("property");
+		}
+		return constructorInjections;
 	}
 
 	private String getAttributeValue(Element element, String attributeName) {
