@@ -2,9 +2,9 @@ package com.lalit.api.di.design.core.context;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Stack;
 
 import nu.xom.Builder;
 import nu.xom.Document;
@@ -24,7 +24,6 @@ public class DIContext {
 	public static void main(String... s) {
 		try {
 			new DIContext();
-			System.out.println();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -81,12 +80,14 @@ public class DIContext {
 					"C:\\Users\\lalit goyal\\git\\LearningDependencyInjection\\src\\main\\java\\com\\lalit\\api\\di\\design\\constructorInjection\\Config_file_constructor_injection.xml"));
 
 			Nodes beansNode = doc.query("//beans//bean");
-			Stack<Element> s = new Stack<>();
-			s.push((Element) beansNode.get(0));
 			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
-				getBeanObject(doc, beansNode, s, parentClassIndex);
+				mapOfBeansInstance.put("Test", getBeanObject(doc, (Element) beansNode.get(parentClassIndex)));
 			}
 
+			// We then need to perform the setter injection on the created beans
+			// TODO check the code of the setter injeaction and at end we can
+			// delete the setter injection and this will server as both type of
+			// injection i.e. setter and constructor
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -97,31 +98,38 @@ public class DIContext {
 	 * gets all constructor dependency for a bean We will need to LIFO data
 	 * structure. Tree Traverse will be Post -order (Left-Right-Root)
 	 * 
+	 * @throws ClassNotFoundException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * 
 	 **/
-	private void getBeanObject(Document doc, Nodes beansNode, Stack<Element> s, int parentClassIndex) {
-		Element element = null;
-		if (s.size() > 1) {
-			element = s.peek();
-		} else {
-			element = (Element) beansNode.get(parentClassIndex);
-		}
+	private Object getBeanObject(Document doc, Element element)
+			throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 
-		if (element.getLocalName().equals("bean")) {
-			Elements constructorInjection = getConstructorInjectionElements(element, parentClassIndex);
-			for (int i = 0; i < constructorInjection.size(); ++i)
-				s.push(constructorInjection.get(i));
-		} else if (((Element) element.getParent()).getLocalName().equals("ConstructorInjection")
-				&& element.getLocalName().equals("property")) {
-			Nodes beansNode1 = doc
-					.query("//beans//bean[attribute::id='" + (element).getAttributeValue("value-ref") + "']");
-			Elements constructorInjection = getConstructorInjectionElements((Element) beansNode1.get(0),
-					parentClassIndex);
+		if ("bean".equalsIgnoreCase(element.getLocalName())) {
+			Elements constructorInjection = getConstructorInjectionElements(element);
 			if (constructorInjection != null) {
-				for (int i = 0; i < constructorInjection.size(); ++i)
-					s.push(constructorInjection.get(i));
+				Map<String, Object> mapOfContructorParameters = new HashMap<String, Object>();
+				for (int i = 0; i < constructorInjection.size(); ++i) {
+					Object obj = getBeanObject(doc, constructorInjection.get(i));
+					mapOfContructorParameters.put(constructorInjection.get(i).getAttributeValue("id"), obj);
+				}
+				// TODO Reflection create the object with parameterized
+				// constructor
+				return null;
 			} else {
-				s.pop();
-
+				Class<?> classObj = Class.forName(element.getChildElements("name").get(0).getValue());
+				return classObj.newInstance();
+			}
+		} else {
+			if ((element).getAttributeValue("value-ref") != null) {
+				Nodes beansNode = doc
+						.query("//beans//bean[attribute::id='" + (element).getAttributeValue("value-ref") + "']");
+				return getBeanObject(doc, ((Element) beansNode.get(0)));
+			} else {
+				// TODO return the value of the property in case it is other
+				// than reference i.e. primitive or collection
+				return 0;
 			}
 		}
 	}
@@ -147,7 +155,7 @@ public class DIContext {
 		return setterInjections;
 	}
 
-	private Elements getConstructorInjectionElements(Element element, int index) {
+	private Elements getConstructorInjectionElements(Element element) {
 		Elements constructorInjections = null;
 		if (element.getFirstChildElement("ConstructorInjection") != null
 				&& element.getFirstChildElement("ConstructorInjection").getChildElements("property") != null) {

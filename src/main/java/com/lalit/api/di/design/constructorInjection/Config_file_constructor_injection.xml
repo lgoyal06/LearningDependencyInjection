@@ -4,7 +4,7 @@
 		<name>com.lalit.api.di.design.setterInjection.example.BImpl</name>
 		<ConstructorInjection>
 			<property id="aClass" value-ref="aImplVersion1" />
-			<property id="dClass" value-ref="dImplVersion1" />
+			<property id="cClass" value-ref="cImplVersion1" />
 		</ConstructorInjection>
 		<SetterInjection>
 			<property id="aClass1" value-ref="aImplVersion2" />
@@ -27,8 +27,5 @@
 	</bean>
 	<bean id="cImplVersion1">
 		<name>com.lalit.api.di.design.setterInjection.example.CImplVersion1</name>
-	</bean>
-	<bean id="dImplVersion1">
-		<name>com.lalit.api.di.design.setterInjection.example.DImplVersion1</name>
 	</bean>
 </beans>
