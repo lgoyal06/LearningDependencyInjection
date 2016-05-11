@@ -3,8 +3,8 @@
 	<bean id="bImpl">
 		<name>com.lalit.api.di.design.setterInjection.example.BImpl</name>
 		<ConstructorInjection>
-			<property id="aClass" value-ref="aImplVersion1" />
-			<property id="cClass" value-ref="cImplVersion1" />
+			<arg value-ref="aImplVersion1" type="com.lalit.api.di.design.setterInjection.example.AInterface" />
+			<arg value-ref="cImplVersion1" type="com.lalit.api.di.design.setterInjection.example.ICImpl"/>
 		</ConstructorInjection>
 		<SetterInjection>
 			<property id="aClass1" value-ref="aImplVersion2" />
@@ -19,7 +19,7 @@
 	<bean id="aImplVersion2">
 		<name>com.lalit.api.di.design.setterInjection.example.AImplVersion2</name>
 		<ConstructorInjection>
-			<property id="cClass" value-ref="cImplVersion1" />
+			<arg  value-ref="cImplVersion1"  type="com.lalit.api.di.design.setterInjection.example.ICImpl"/>
 		</ConstructorInjection>
 		<SetterInjection>
 			<property id="x" dataType="int" value="10" />

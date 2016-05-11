@@ -4,6 +4,9 @@ public class AImplVersion2 implements AInterface {
 
 	private int x;
 
+	public AImplVersion2(ICImpl cmpl){
+		
+	}
 	public void setX(int x) {
 		this.x = x;
 	}

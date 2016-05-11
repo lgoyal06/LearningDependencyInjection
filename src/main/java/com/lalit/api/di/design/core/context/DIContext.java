@@ -1,10 +1,13 @@
 package com.lalit.api.di.design.core.context;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.HashMap;
+import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.lalit.api.di.design.setterInjection.example.BImpl;
 
 import nu.xom.Builder;
 import nu.xom.Document;
@@ -23,7 +26,7 @@ public class DIContext {
 
 	public static void main(String... s) {
 		try {
-			new DIContext();
+			((BImpl) new DIContext().getBean("bImpl")).generatePolicy();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -81,11 +84,12 @@ public class DIContext {
 
 			Nodes beansNode = doc.query("//beans//bean");
 			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
-				mapOfBeansInstance.put("Test", getBeanObject(doc, (Element) beansNode.get(parentClassIndex)));
+				mapOfBeansInstance.put(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"),
+						getBeanObject(doc, (Element) beansNode.get(parentClassIndex)));
 			}
 
 			// We then need to perform the setter injection on the created beans
-			// TODO check the code of the setter injeaction and at end we can
+			// TODO check the code of the setter injection and at end we can
 			// delete the setter injection and this will server as both type of
 			// injection i.e. setter and constructor
 		} catch (Exception e) {
@@ -101,24 +105,30 @@ public class DIContext {
 	 * @throws ClassNotFoundException
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws InvocationTargetException
+	 * @throws IllegalArgumentException
 	 * 
 	 **/
 	private Object getBeanObject(Document doc, Element element)
-			throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+			throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException,
+			SecurityException, IllegalArgumentException, InvocationTargetException {
 
 		if ("bean".equalsIgnoreCase(element.getLocalName())) {
 			Elements constructorInjection = getConstructorInjectionElements(element);
 			if (constructorInjection != null) {
-				Map<String, Object> mapOfContructorParameters = new HashMap<String, Object>();
+				Class<?>[] argumentType = new Class[constructorInjection.size()];
+				Object[] argumentValue = new Object[constructorInjection.size()];
 				for (int i = 0; i < constructorInjection.size(); ++i) {
-					Object obj = getBeanObject(doc, constructorInjection.get(i));
-					mapOfContructorParameters.put(constructorInjection.get(i).getAttributeValue("id"), obj);
+					argumentValue[i] = getBeanObject(doc, constructorInjection.get(i));
+					argumentType[i] = Class.forName(constructorInjection.get(i).getAttributeValue("type"));
 				}
-				// TODO Reflection create the object with parameterized
-				// constructor
-				return null;
+				Class<?> parentClass = Class.forName(element.getFirstChildElement("name").getValue());
+				Constructor<?> constructor = parentClass.getDeclaredConstructor(argumentType);
+				return constructor.newInstance(argumentValue);
 			} else {
-				Class<?> classObj = Class.forName(element.getChildElements("name").get(0).getValue());
+				Class<?> classObj = Class.forName(element.getFirstChildElement("name").getValue());
 				return classObj.newInstance();
 			}
 		} else {
@@ -158,8 +168,8 @@ public class DIContext {
 	private Elements getConstructorInjectionElements(Element element) {
 		Elements constructorInjections = null;
 		if (element.getFirstChildElement("ConstructorInjection") != null
-				&& element.getFirstChildElement("ConstructorInjection").getChildElements("property") != null) {
-			constructorInjections = element.getFirstChildElement("ConstructorInjection").getChildElements("property");
+				&& element.getFirstChildElement("ConstructorInjection").getChildElements("arg") != null) {
+			constructorInjections = element.getFirstChildElement("ConstructorInjection").getChildElements("arg");
 		}
 		return constructorInjections;
 	}
@@ -176,6 +186,8 @@ public class DIContext {
 		field.set(parentClassInstance, dependencyClassInstance);
 	}
 
+	// TODO Complete the Setter Injection primitive data type conversion
+	// List,Set and Map conversion as well
 	private void injectPrimitiveFieldDependency(String value, String dataType, Class<?> parentClass,
 			Object parentClassInstance, String fieldName)
 					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
