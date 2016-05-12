@@ -2,12 +2,18 @@ package com.lalit.api.di.design.setterInjection.example;
 
 public class BImpl {
 
-	public BImpl(AInterface aClass, ICImpl cImpl) {
+	public BImpl(AInterface aClass, ICImpl cImpl, int x, boolean b) {
 		this.aClass = aClass;
 		this.cImpl = cImpl;
+		this.x = x;
+		this.b = b;
 	}
 
 	private AInterface aClass;
+
+	private int x;
+
+	private boolean b;
 
 	private AInterface aClass1;
 
@@ -24,6 +30,7 @@ public class BImpl {
 	public void generatePolicy() {
 		System.out.println(aClass.createPolicy());
 		System.out.println(cImpl.test());
+		System.out.println(x);
 	}
 
 }

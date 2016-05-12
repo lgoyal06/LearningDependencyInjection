@@ -5,6 +5,8 @@
 		<ConstructorInjection>
 			<arg value-ref="aImplVersion1" type="com.lalit.api.di.design.setterInjection.example.AInterface" />
 			<arg value-ref="cImplVersion1" type="com.lalit.api.di.design.setterInjection.example.ICImpl"/>
+			<arg value="10" type="int"/>
+			<arg value="false" type="boolean"/>
 		</ConstructorInjection>
 		<SetterInjection>
 			<property id="aClass1" value-ref="aImplVersion2" />

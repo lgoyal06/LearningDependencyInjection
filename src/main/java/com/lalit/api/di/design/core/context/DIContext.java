@@ -1,7 +1,6 @@
 package com.lalit.api.di.design.core.context;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
@@ -85,13 +84,10 @@ public class DIContext {
 			Nodes beansNode = doc.query("//beans//bean");
 			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
 				mapOfBeansInstance.put(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"),
-						getBeanObject(doc, (Element) beansNode.get(parentClassIndex)));
+						getArgumentValue(doc, (Element) beansNode.get(parentClassIndex)));
 			}
 
-			// We then need to perform the setter injection on the created beans
-			// TODO check the code of the setter injection and at end we can
-			// delete the setter injection and this will server as both type of
-			// injection i.e. setter and constructor
+			// TODO P1 Merge Constructor Injection wit Setter Injection
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -111,22 +107,21 @@ public class DIContext {
 	 * @throws IllegalArgumentException
 	 * 
 	 **/
-	private Object getBeanObject(Document doc, Element element)
+	private Object getArgumentValue(Document doc, Element element)
 			throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException,
 			SecurityException, IllegalArgumentException, InvocationTargetException {
 
 		if ("bean".equalsIgnoreCase(element.getLocalName())) {
 			Elements constructorInjection = getConstructorInjectionElements(element);
 			if (constructorInjection != null) {
-				Class<?>[] argumentType = new Class[constructorInjection.size()];
 				Object[] argumentValue = new Object[constructorInjection.size()];
+				Class<?>[] argumentType = new Class[constructorInjection.size()];
 				for (int i = 0; i < constructorInjection.size(); ++i) {
-					argumentValue[i] = getBeanObject(doc, constructorInjection.get(i));
-					argumentType[i] = Class.forName(constructorInjection.get(i).getAttributeValue("type"));
+					argumentValue[i] = getArgumentValue(doc, constructorInjection.get(i));
+					argumentType[i] = getArgumentType(constructorInjection.get(i));
 				}
 				Class<?> parentClass = Class.forName(element.getFirstChildElement("name").getValue());
-				Constructor<?> constructor = parentClass.getDeclaredConstructor(argumentType);
-				return constructor.newInstance(argumentValue);
+				return parentClass.getDeclaredConstructor(argumentType).newInstance(argumentValue);
 			} else {
 				Class<?> classObj = Class.forName(element.getFirstChildElement("name").getValue());
 				return classObj.newInstance();
@@ -135,12 +130,57 @@ public class DIContext {
 			if ((element).getAttributeValue("value-ref") != null) {
 				Nodes beansNode = doc
 						.query("//beans//bean[attribute::id='" + (element).getAttributeValue("value-ref") + "']");
-				return getBeanObject(doc, ((Element) beansNode.get(0)));
+				return getArgumentValue(doc, ((Element) beansNode.get(0)));
 			} else {
-				// TODO return the value of the property in case it is other
-				// than reference i.e. primitive or collection
-				return 0;
+				return convertFromStringToPrimitiveWrapperObjectType((element).getAttributeValue("type"),
+						(element).getAttributeValue("value"));
 			}
+		}
+	}
+
+	private Class<?> getArgumentType(Element constructorInjection) throws ClassNotFoundException {
+		switch (constructorInjection.getAttributeValue("type")) {
+		case "int":
+			return int.class;
+		case "boolean":
+			return boolean.class;
+		case "long":
+			return long.class;
+		case "double":
+			return double.class;
+		case "byte":
+			return byte.class;
+		case "short":
+			return short.class;
+		case "float":
+			return float.class;
+		case "char":
+			return char.class;
+		default:
+			return Class.forName(constructorInjection.getAttributeValue("type"));
+		}
+	}
+
+	private Object convertFromStringToPrimitiveWrapperObjectType(String type, String value) {
+		switch (type) {
+		case "int":
+			return Integer.valueOf(value);
+		case "boolean":
+			return Boolean.valueOf(value);
+		case "long":
+			return Long.valueOf(value);
+		case "double":
+			return Double.valueOf(value);
+		case "byte":
+			return Byte.valueOf(value);
+		case "short":
+			return Short.valueOf(value);
+		case "float":
+			return Float.valueOf(value);
+		case "char":
+			return value.toCharArray()[0];
+		default:
+			return value;
 		}
 	}
 
@@ -186,7 +226,7 @@ public class DIContext {
 		field.set(parentClassInstance, dependencyClassInstance);
 	}
 
-	// TODO Complete the Setter Injection primitive data type conversion
+	// TODO P2 Complete the Setter Injection primitive data type conversion
 	// List,Set and Map conversion as well
 	private void injectPrimitiveFieldDependency(String value, String dataType, Class<?> parentClass,
 			Object parentClassInstance, String fieldName)
@@ -202,6 +242,21 @@ public class DIContext {
 			break;
 		case "long":
 			field.set(parentClassInstance, Long.valueOf(value));
+			break;
+		case "boolean":
+			field.set(parentClassInstance, Boolean.valueOf(value));
+			break;
+		case "byte":
+			field.set(parentClassInstance, Byte.valueOf(value));
+			break;
+		case "short":
+			field.set(parentClassInstance, Short.valueOf(value));
+			break;
+		case "float":
+			field.set(parentClassInstance, Float.valueOf(value));
+			break;
+		case "char":
+			field.set(parentClassInstance, value.toCharArray()[0]);
 			break;
 		default:
 			field.set(parentClassInstance, value);
