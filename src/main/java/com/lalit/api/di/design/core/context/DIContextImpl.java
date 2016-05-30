@@ -6,76 +6,31 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.lalit.api.di.design.setterInjection.example.BImpl;
-
 import nu.xom.Builder;
 import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.Elements;
 import nu.xom.Nodes;
 
-public class DIContext {
+/**
+ * @author lalit goyal
+ * 
+ *         TODO Apply the OOPS Design Concepts and make it API like
+ * 
+ *         use Design Pattern
+ * 
+ *         SOLID Principal
+ *
+ */
+public class DIContextImpl implements IDIContext {
 
-	private static final Map<String, Class<?>> mapOfBeansClassObject = new LinkedHashMap<>();
 	private static final Map<String, Object> mapOfBeansInstance = new LinkedHashMap<>();
 
 	public Object getBean(String beanId) {
 		return mapOfBeansInstance.get(beanId);
 	}
 
-	public static void main(String... s) {
-		try {
-			((BImpl) new DIContext().getBean("bImpl")).generatePolicy();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	/** Using for Setter Injection **/
-	public DIContext(String configFilePath) throws ClassNotFoundException, NoSuchFieldException, SecurityException,
-			IllegalArgumentException, IllegalAccessException, InstantiationException {
-		try {
-			Document doc = new Builder().build(new File(configFilePath));
-
-			Nodes beansNode = doc.query("//beans//bean");
-
-			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
-				Element element = (Element) beansNode.get(parentClassIndex);
-				Class<?> parentClass = Class.forName(element.getFirstChildElement("name").getValue());
-				mapOfBeansClassObject.put(element.getAttribute("id").getValue(), parentClass);
-				mapOfBeansInstance.put(element.getAttribute("id").getValue(), parentClass.newInstance());
-			}
-
-			int index = 0;
-			for (Map.Entry<String, Class<?>> entry : mapOfBeansClassObject.entrySet()) {
-				Elements setterInjections = getSetterInjectionElements(beansNode, index);
-				Object parentClassInstance = mapOfBeansInstance.get(entry.getKey());
-				if (setterInjections != null) {
-					for (int dependencyIndex = 0; dependencyIndex < setterInjections.size(); ++dependencyIndex) {
-						Element elementInjection = ((Element) setterInjections.get(dependencyIndex));
-
-						String valueRefAttValue = getAttributeValue(elementInjection, "value-ref");
-						String idAttValue = getAttributeValue(elementInjection, "id");
-						String dataTypeAttValue = getAttributeValue(elementInjection, "dataType");
-						String valueAttValue = getAttributeValue(elementInjection, "value");
-
-						setFieldValue(entry, parentClassInstance, valueRefAttValue, idAttValue, dataTypeAttValue,
-								valueAttValue);
-					}
-				}
-				++index;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * 
-	 * Used for Constructor Dependency injection
-	 * 
-	 **/
-	public DIContext() throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException,
+	public DIContextImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException,
 			IllegalAccessException, InstantiationException {
 		try {
 			Document doc = new Builder().build(new File(
@@ -83,13 +38,34 @@ public class DIContext {
 
 			Nodes beansNode = doc.query("//beans//bean");
 			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
-				mapOfBeansInstance.put(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"),
-						getArgumentValue(doc, (Element) beansNode.get(parentClassIndex)));
+				populateConstructorInjectionOfBeanInMap(mapOfBeansInstance, doc,
+						(Element) beansNode.get(parentClassIndex));
 			}
 
-			// TODO P1 Merge Constructor Injection wit Setter Injection
+			for (int parentClassIndex = 0; parentClassIndex < beansNode.size(); ++parentClassIndex) {
+				populateFieldDependenciesOfBeans(beansNode, parentClassIndex);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void populateFieldDependenciesOfBeans(Nodes beansNode, int parentClassIndex)
+			throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+		Elements setterInjections = getSetterInjectionElements((Element) beansNode.get(parentClassIndex));
+		Object parentClassInstance = mapOfBeansInstance
+				.get(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"));
+		if (setterInjections != null) {
+			for (int dependencyIndex = 0; dependencyIndex < setterInjections.size(); ++dependencyIndex) {
+				Element elementInjection = ((Element) setterInjections.get(dependencyIndex));
+
+				String valueRefAttValue = getAttributeValue(elementInjection, "value-ref");
+				String idAttValue = getAttributeValue(elementInjection, "id");
+				String dataTypeAttValue = getAttributeValue(elementInjection, "dataType");
+				String valueAttValue = getAttributeValue(elementInjection, "value");
+
+				setFieldValue(parentClassInstance, valueRefAttValue, idAttValue, dataTypeAttValue, valueAttValue);
+			}
 		}
 	}
 
@@ -107,30 +83,38 @@ public class DIContext {
 	 * @throws IllegalArgumentException
 	 * 
 	 **/
-	private Object getArgumentValue(Document doc, Element element)
-			throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException,
-			SecurityException, IllegalArgumentException, InvocationTargetException {
+	private Object populateConstructorInjectionOfBeanInMap(Map<String, Object> mapOfBeansInstance, Document doc,
+			Element element) throws ClassNotFoundException, InstantiationException, IllegalAccessException,
+					NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException {
 
 		if ("bean".equalsIgnoreCase(element.getLocalName())) {
+			if (mapOfBeansInstance.containsKey(element.getAttributeValue("id"))) {
+				return mapOfBeansInstance.get(element.getAttributeValue("id"));
+			}
 			Elements constructorInjection = getConstructorInjectionElements(element);
 			if (constructorInjection != null) {
 				Object[] argumentValue = new Object[constructorInjection.size()];
 				Class<?>[] argumentType = new Class[constructorInjection.size()];
 				for (int i = 0; i < constructorInjection.size(); ++i) {
-					argumentValue[i] = getArgumentValue(doc, constructorInjection.get(i));
+					argumentValue[i] = populateConstructorInjectionOfBeanInMap(mapOfBeansInstance, doc,
+							constructorInjection.get(i));
 					argumentType[i] = getArgumentType(constructorInjection.get(i));
 				}
 				Class<?> parentClass = Class.forName(element.getFirstChildElement("name").getValue());
-				return parentClass.getDeclaredConstructor(argumentType).newInstance(argumentValue);
+				Object obj = parentClass.getDeclaredConstructor(argumentType).newInstance(argumentValue);
+				mapOfBeansInstance.put(element.getAttributeValue("id"), obj);
+				return obj;
 			} else {
 				Class<?> classObj = Class.forName(element.getFirstChildElement("name").getValue());
-				return classObj.newInstance();
+				Object obj = classObj.newInstance();
+				mapOfBeansInstance.put(element.getAttributeValue("id"), obj);
+				return obj;
 			}
 		} else {
 			if ((element).getAttributeValue("value-ref") != null) {
 				Nodes beansNode = doc
 						.query("//beans//bean[attribute::id='" + (element).getAttributeValue("value-ref") + "']");
-				return getArgumentValue(doc, ((Element) beansNode.get(0)));
+				return populateConstructorInjectionOfBeanInMap(mapOfBeansInstance, doc, ((Element) beansNode.get(0)));
 			} else {
 				return convertFromStringToPrimitiveWrapperObjectType((element).getAttributeValue("type"),
 						(element).getAttributeValue("value"));
@@ -184,19 +168,17 @@ public class DIContext {
 		}
 	}
 
-	private void setFieldValue(Map.Entry<String, Class<?>> entry, Object parentClassInstance, String valueRefAttValue,
-			String idAttValue, String dataTypeAttValue, String valueAttValue)
+	private void setFieldValue(Object parentClassInstance, String valueRefAttValue, String idAttValue,
+			String dataTypeAttValue, String valueAttValue)
 					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
-		if (valueRefAttValue != null && mapOfBeansClassObject.containsKey(valueRefAttValue))
-			injectReferenceTypeFieldDependency(mapOfBeansInstance.get(valueRefAttValue), entry.getValue(),
-					parentClassInstance, idAttValue);
-		else
-			injectPrimitiveFieldDependency(valueAttValue, dataTypeAttValue, entry.getValue(), parentClassInstance,
+		if (valueRefAttValue != null)
+			injectReferenceTypeFieldDependency(mapOfBeansInstance.get(valueRefAttValue), parentClassInstance,
 					idAttValue);
+		else
+			injectPrimitiveFieldDependency(valueAttValue, dataTypeAttValue, parentClassInstance, idAttValue);
 	}
 
-	private Elements getSetterInjectionElements(Nodes beansNode, int index) {
-		Element element = (Element) beansNode.get(index);
+	private Elements getSetterInjectionElements(Element element) {
 		Elements setterInjections = null;
 		if (element.getFirstChildElement("SetterInjection") != null
 				&& element.getFirstChildElement("SetterInjection").getChildElements("property") != null) {
@@ -218,20 +200,18 @@ public class DIContext {
 		return element.getAttribute(attributeName) == null ? null : element.getAttribute(attributeName).getValue();
 	}
 
-	private void injectReferenceTypeFieldDependency(Object dependencyClassInstance, Class<?> parentClass,
-			Object parentClassInstance, String fieldName)
-					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
-		Field field = parentClass.getDeclaredField(fieldName);
+	private void injectReferenceTypeFieldDependency(Object dependencyClassInstance, Object parentClassInstance,
+			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+		Field field = parentClassInstance.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
 		field.set(parentClassInstance, dependencyClassInstance);
 	}
 
 	// TODO P2 Complete the Setter Injection primitive data type conversion
 	// List,Set and Map conversion as well
-	private void injectPrimitiveFieldDependency(String value, String dataType, Class<?> parentClass,
-			Object parentClassInstance, String fieldName)
-					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
-		Field field = parentClass.getDeclaredField(fieldName);
+	private void injectPrimitiveFieldDependency(String value, String dataType, Object parentClassInstance,
+			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+		Field field = parentClassInstance.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
 		switch (dataType) {
 		case "int":
