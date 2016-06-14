@@ -30,8 +30,8 @@ public class DIContextImpl implements IDIContext {
 		return mapOfBeansInstance.get(beanId);
 	}
 
-	public DIContextImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException, IllegalArgumentException,
-			IllegalAccessException, InstantiationException {
+	public DIContextImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException,
+			IllegalArgumentException, IllegalAccessException, InstantiationException {
 		try {
 			Document doc = new Builder().build(new File(
 					"C:\\Users\\lalit goyal\\git\\LearningDependencyInjection\\src\\main\\java\\com\\lalit\\api\\di\\design\\constructorInjection\\Config_file_constructor_injection.xml"));
@@ -50,29 +50,13 @@ public class DIContextImpl implements IDIContext {
 		}
 	}
 
-	private void populateFieldDependenciesOfBeans(Nodes beansNode, int parentClassIndex)
-			throws NoSuchFieldException, IllegalAccessException, InstantiationException {
-		Elements setterInjections = getSetterInjectionElements((Element) beansNode.get(parentClassIndex));
-		Object parentClassInstance = mapOfBeansInstance
-				.get(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"));
-		if (setterInjections != null) {
-			for (int dependencyIndex = 0; dependencyIndex < setterInjections.size(); ++dependencyIndex) {
-				Element elementInjection = ((Element) setterInjections.get(dependencyIndex));
-
-				String valueRefAttValue = getAttributeValue(elementInjection, "value-ref");
-				String idAttValue = getAttributeValue(elementInjection, "id");
-				String dataTypeAttValue = getAttributeValue(elementInjection, "dataType");
-				String valueAttValue = getAttributeValue(elementInjection, "value");
-
-				setFieldValue(parentClassInstance, valueRefAttValue, idAttValue, dataTypeAttValue, valueAttValue);
-			}
-		}
-	}
-
 	/**
 	 * This will be recursive function that will keep on calling itself until it
-	 * gets all constructor dependency for a bean We will need to LIFO data
-	 * structure. Tree Traverse will be Post -order (Left-Right-Root)
+	 * gets all constructor dependency for a bean . Tree Traverse will be Post
+	 * -order (Left-Right-Root)
+	 * 
+	 * As of now Constructor can have primitive or other bean as dependency
+	 * Please use setter injection for Collection objects
 	 * 
 	 * @throws ClassNotFoundException
 	 * @throws IllegalAccessException
@@ -100,12 +84,12 @@ public class DIContextImpl implements IDIContext {
 							constructorInjection.get(i));
 					argumentType[i] = getArgumentType(constructorInjection.get(i));
 				}
-				Class<?> parentClass = Class.forName(element.getFirstChildElement("name").getValue());
+				Class<?> parentClass = Class.forName(element.getFirstChildElement("name").getValue().trim());
 				Object obj = parentClass.getDeclaredConstructor(argumentType).newInstance(argumentValue);
 				mapOfBeansInstance.put(element.getAttributeValue("id"), obj);
 				return obj;
 			} else {
-				Class<?> classObj = Class.forName(element.getFirstChildElement("name").getValue());
+				Class<?> classObj = Class.forName(element.getFirstChildElement("name").getValue().trim());
 				Object obj = classObj.newInstance();
 				mapOfBeansInstance.put(element.getAttributeValue("id"), obj);
 				return obj;
@@ -120,6 +104,15 @@ public class DIContextImpl implements IDIContext {
 						(element).getAttributeValue("value"));
 			}
 		}
+	}
+
+	private Elements getConstructorInjectionElements(Element element) {
+		Elements constructorInjections = null;
+		if (element.getFirstChildElement("ConstructorInjection") != null
+				&& element.getFirstChildElement("ConstructorInjection").getChildElements("arg") != null) {
+			constructorInjections = element.getFirstChildElement("ConstructorInjection").getChildElements("arg");
+		}
+		return constructorInjections;
 	}
 
 	private Class<?> getArgumentType(Element constructorInjection) throws ClassNotFoundException {
@@ -168,12 +161,43 @@ public class DIContextImpl implements IDIContext {
 		}
 	}
 
+	private void populateFieldDependenciesOfBeans(Nodes beansNode, int parentClassIndex)
+			throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+		Elements setterInjections = getSetterInjectionElements((Element) beansNode.get(parentClassIndex));
+		Object parentClassInstance = mapOfBeansInstance
+				.get(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"));
+		if (setterInjections != null) {
+			for (int dependencyIndex = 0; dependencyIndex < setterInjections.size(); ++dependencyIndex) {
+				Element elementInjection = ((Element) setterInjections.get(dependencyIndex));
+				String valueRefAttValue = getAttrValue(elementInjection, "value-ref");
+				String idAttValue = getAttrValue(elementInjection, "id");
+				String dataTypeAttValue = getAttrValue(elementInjection, "dataType");
+				String valueAttValue = getAttrValue(elementInjection, "value");
+
+				setFieldValue(parentClassInstance, valueRefAttValue, idAttValue, dataTypeAttValue, valueAttValue);
+			}
+		}
+	}
+
+	private String getAttrValue(Element element, String attributeName) {
+		return element.getAttribute(attributeName) == null ? null : element.getAttribute(attributeName).getValue();
+	}
+
 	private void setFieldValue(Object parentClassInstance, String valueRefAttValue, String idAttValue,
 			String dataTypeAttValue, String valueAttValue)
 					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+		// User Defined class fields i.e. other bean class
 		if (valueRefAttValue != null)
 			injectReferenceTypeFieldDependency(mapOfBeansInstance.get(valueRefAttValue), parentClassInstance,
 					idAttValue);
+		// TODO Collection Data type fields
+		else if (dataTypeAttValue.equalsIgnoreCase("List") || dataTypeAttValue.equalsIgnoreCase("Map")
+				|| dataTypeAttValue.equalsIgnoreCase("set"))
+			try {
+				injectCollectionTypeFieldDependency(valueAttValue, dataTypeAttValue, parentClassInstance, idAttValue);
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
 		else
 			injectPrimitiveFieldDependency(valueAttValue, dataTypeAttValue, parentClassInstance, idAttValue);
 	}
@@ -187,19 +211,6 @@ public class DIContextImpl implements IDIContext {
 		return setterInjections;
 	}
 
-	private Elements getConstructorInjectionElements(Element element) {
-		Elements constructorInjections = null;
-		if (element.getFirstChildElement("ConstructorInjection") != null
-				&& element.getFirstChildElement("ConstructorInjection").getChildElements("arg") != null) {
-			constructorInjections = element.getFirstChildElement("ConstructorInjection").getChildElements("arg");
-		}
-		return constructorInjections;
-	}
-
-	private String getAttributeValue(Element element, String attributeName) {
-		return element.getAttribute(attributeName) == null ? null : element.getAttribute(attributeName).getValue();
-	}
-
 	private void injectReferenceTypeFieldDependency(Object dependencyClassInstance, Object parentClassInstance,
 			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
 		Field field = parentClassInstance.getClass().getDeclaredField(fieldName);
@@ -207,40 +218,62 @@ public class DIContextImpl implements IDIContext {
 		field.set(parentClassInstance, dependencyClassInstance);
 	}
 
-	// TODO P2 Complete the Setter Injection primitive data type conversion
-	// List,Set and Map conversion as well
 	private void injectPrimitiveFieldDependency(String value, String dataType, Object parentClassInstance,
 			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
 		Field field = parentClassInstance.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
 		switch (dataType) {
 		case "int":
-			field.set(parentClassInstance, Integer.valueOf(value));
+			field.setInt(parentClassInstance, Integer.valueOf(value));
 			break;
 		case "double":
-			field.set(parentClassInstance, Double.valueOf(value));
+			field.setDouble(parentClassInstance, Double.valueOf(value));
 			break;
 		case "long":
-			field.set(parentClassInstance, Long.valueOf(value));
+			field.setLong(parentClassInstance, Long.valueOf(value));
 			break;
 		case "boolean":
-			field.set(parentClassInstance, Boolean.valueOf(value));
+			field.setBoolean(parentClassInstance, Boolean.valueOf(value));
 			break;
 		case "byte":
-			field.set(parentClassInstance, Byte.valueOf(value));
+			field.setByte(parentClassInstance, Byte.valueOf(value));
 			break;
 		case "short":
-			field.set(parentClassInstance, Short.valueOf(value));
+			field.setShort(parentClassInstance, Short.valueOf(value));
 			break;
 		case "float":
-			field.set(parentClassInstance, Float.valueOf(value));
+			field.setFloat(parentClassInstance, Float.valueOf(value));
 			break;
 		case "char":
-			field.set(parentClassInstance, value.toCharArray()[0]);
+			field.setChar(parentClassInstance, value.toCharArray()[0]);
 			break;
 		default:
 			field.set(parentClassInstance, value);
 			break;
 		}
+	}
+
+	// Collection can be List, Map and Set
+	// First we are targeting List then Map ............then Set
+	private void injectCollectionTypeFieldDependency(String value, String dataType, Object parentClassInstance,
+			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException,
+					ClassNotFoundException {
+		Field field = parentClassInstance.getClass().getDeclaredField(fieldName);
+		field.setAccessible(true);
+		System.out.println(field.getGenericType());
+		fetchGenericTypeOfField(field);
+		field.set(parentClassInstance, Float.valueOf(value));
+		switch (dataType) {
+		}
+	}
+
+	// TODO : Generic type can be
+	// > primitive
+	// > other bean object
+	// > collection object
+	private String fetchGenericTypeOfField(Field field) {
+
+		return null;
+
 	}
 }
