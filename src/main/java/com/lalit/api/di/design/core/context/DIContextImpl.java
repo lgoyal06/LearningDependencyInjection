@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import nu.xom.Builder;
@@ -25,11 +26,18 @@ import nu.xom.Nodes;
 public class DIContextImpl implements IDIContext {
 
 	private static final Map<String, Object> mapOfBeansInstance = new LinkedHashMap<>();
-
+/**
+*
+* TODO Add another function that returns Bean object based upon the Class object passed to method
+* by 20th June
+**/
 	public Object getBean(String beanId) {
 		return mapOfBeansInstance.get(beanId);
 	}
-
+/**
+ * TODO Add code to dynamically pick xml file 
+ * Code to pass the File path in Constructor by 20th June
+ * */
 	public DIContextImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException,
 			IllegalArgumentException, IllegalAccessException, InstantiationException {
 		try {
@@ -168,13 +176,14 @@ public class DIContextImpl implements IDIContext {
 				.get(((Element) beansNode.get(parentClassIndex)).getAttributeValue("id"));
 		if (setterInjections != null) {
 			for (int dependencyIndex = 0; dependencyIndex < setterInjections.size(); ++dependencyIndex) {
-				Element elementInjection = ((Element) setterInjections.get(dependencyIndex));
-				String valueRefAttValue = getAttrValue(elementInjection, "value-ref");
-				String idAttValue = getAttrValue(elementInjection, "id");
-				String dataTypeAttValue = getAttrValue(elementInjection, "dataType");
-				String valueAttValue = getAttrValue(elementInjection, "value");
+				Element elementInjected = ((Element) setterInjections.get(dependencyIndex));
+				String valueRefAttValue = getAttrValue(elementInjected, "value-ref");
+				String idAttValue = getAttrValue(elementInjected, "id");
+				String dataTypeAttValue = getAttrValue(elementInjected, "dataType");
+				String valueAttValue = getAttrValue(elementInjected, "value");
 
-				setFieldValue(parentClassInstance, valueRefAttValue, idAttValue, dataTypeAttValue, valueAttValue);
+				setFieldValue(parentClassInstance, valueRefAttValue, idAttValue, dataTypeAttValue, valueAttValue,
+						elementInjected);
 			}
 		}
 	}
@@ -184,17 +193,17 @@ public class DIContextImpl implements IDIContext {
 	}
 
 	private void setFieldValue(Object parentClassInstance, String valueRefAttValue, String idAttValue,
-			String dataTypeAttValue, String valueAttValue)
+			String dataTypeAttValue, String valueAttValue, Element elementInjected)
 					throws NoSuchFieldException, IllegalAccessException, InstantiationException {
 		// User Defined class fields i.e. other bean class
 		if (valueRefAttValue != null)
 			injectReferenceTypeFieldDependency(mapOfBeansInstance.get(valueRefAttValue), parentClassInstance,
 					idAttValue);
 		// TODO Collection Data type fields
-		else if (dataTypeAttValue.equalsIgnoreCase("List") || dataTypeAttValue.equalsIgnoreCase("Map")
-				|| dataTypeAttValue.equalsIgnoreCase("set"))
+		else if (dataTypeAttValue.equalsIgnoreCase("List"))
 			try {
-				injectCollectionTypeFieldDependency(valueAttValue, dataTypeAttValue, parentClassInstance, idAttValue);
+				injectCollectionTypeFieldDependency(valueAttValue, dataTypeAttValue, parentClassInstance, idAttValue,
+						elementInjected);
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -253,24 +262,41 @@ public class DIContextImpl implements IDIContext {
 		}
 	}
 
-	// Collection can be List, Map and Set
-	// First we are targeting List then Map ............then Set
+	/** TODO :Collection can be List, Map and Set
+	* First we are targeting List then Map ............then Set
+	*
+	* 
+	**/
 	private void injectCollectionTypeFieldDependency(String value, String dataType, Object parentClassInstance,
-			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException,
-					ClassNotFoundException {
+			String fieldName, Element elementInjected) throws NoSuchFieldException, IllegalAccessException,
+					InstantiationException, ClassNotFoundException {
+		String collectionClassName = elementInjected.getChildElements("list").get(0).getAttribute("type").getValue();
+
+		Object collectionObjInstance = Class.forName(collectionClassName).newInstance();
+		if (collectionObjInstance instanceof List) {
+			for (int index = 0; index < elementInjected.getChildElements("list").get(0).getChildElements("element")
+					.size(); ++index) {
+
+				// In case the Element contains primitive values
+				// Refactor code to set the generic type of list elements
+				((List) collectionObjInstance).add(elementInjected.getChildElements("list").get(0)
+						.getChildElements("element").get(index).getValue());
+
+				// In case Element contains Another beans
+				// In case Element further contains collection
+			}
+		}
 		Field field = parentClassInstance.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
-		System.out.println(field.getGenericType());
 		fetchGenericTypeOfField(field);
-		field.set(parentClassInstance, Float.valueOf(value));
-		switch (dataType) {
-		}
+		field.set(parentClassInstance, collectionObjInstance);
 	}
 
-	// TODO : Generic type can be
-	// > primitive
-	// > other bean object
-	// > collection object
+	/** TODO: Generic type can be
+	// > primitive TODO by 16th June
+	// > other bean object TODO by 18th June
+	// > collection object TODO by 20 th June
+	**/
 	private String fetchGenericTypeOfField(Field field) {
 
 		return null;

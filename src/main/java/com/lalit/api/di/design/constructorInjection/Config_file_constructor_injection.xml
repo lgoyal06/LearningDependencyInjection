@@ -3,31 +3,105 @@
 	<bean id="bImpl">
 		<name>com.lalit.api.di.design.setterInjection.example.BImpl</name>
 		<ConstructorInjection>
-			<arg value-ref="aImplVersion1" type="com.lalit.api.di.design.setterInjection.example.AInterface" />
-			<arg value-ref="cImplVersion1" type="com.lalit.api.di.design.setterInjection.example.ICImpl"/>
-			<arg value="10" type="int"/>
-			<arg value="false" type="boolean"/>
+			<!-- Constructor can have primitive or other bean as dependency . Collection 
+				type dependency not supported as of now. -->
+			<arg value-ref="aImplVersion1"
+				type="com.lalit.api.di.design.setterInjection.example.AInterface" />
+			<arg value-ref="cImplVersion1"
+				type="com.lalit.api.di.design.setterInjection.example.ICImpl" />
+			<arg value="10" type="int" />
+			<arg value="false" type="boolean" />
 		</ConstructorInjection>
 		<SetterInjection>
 			<property id="aClass1" value-ref="aImplVersion2" />
 		</SetterInjection>
 	</bean>
 	<bean id="aImplVersion1">
-		<name>com.lalit.api.di.design.setterInjection.example.AImplVersion1</name>
+		<name>com.lalit.api.di.design.setterInjection.example.AImplVersion1
+		</name>
 		<SetterInjection>
 			<property id="cClass" value-ref="cImplVersion1" />
 		</SetterInjection>
 	</bean>
 	<bean id="aImplVersion2">
-		<name>com.lalit.api.di.design.setterInjection.example.AImplVersion2</name>
+		<name>com.lalit.api.di.design.setterInjection.example.AImplVersion2
+		</name>
 		<ConstructorInjection>
-			<arg  value-ref="cImplVersion1"  type="com.lalit.api.di.design.setterInjection.example.ICImpl"/>
+			<arg value-ref="cImplVersion1"
+				type="com.lalit.api.di.design.setterInjection.example.ICImpl" />
 		</ConstructorInjection>
 		<SetterInjection>
 			<property id="x" dataType="int" value="10" />
+			<!-- List Scenarios P1 Target Date 2nd June 2016 -->
+			<property id="listPrimitiveExam" dataType="list">
+				<list type="java.util.ArrayList" elementType="java.lang.String">
+					<element>value</element>
+					<element>value</element>
+					<element>12</element>
+				</list>
+			</property>
+			<!-- <property id="listRefExam" dataType="list"> -->
+			<!-- <list type="java.lang.ArrayList" -->
+			<!-- elementType="com.lalit.api.di.design.setterInjection.example.AImplVersion1"> -->
+			<!-- <element>aImplVersion1_1</element> -->
+			<!-- <element>aImplVersion1_2</element> -->
+			<!-- </list> -->
+			<!-- </property> -->
+			<!-- <property id="listOflistPrimitiveExam" dataType="list"> -->
+			<!-- <list type="java.lang.ArrayList" elementType="list"> -->
+			<!-- <element> -->
+			<!-- <list type="java.lang.ArrayList" elementType="int"> -->
+			<!-- <element>value</element> -->
+			<!-- <element>value</element> -->
+			<!-- <element>value</element> -->
+			<!-- </list> -->
+			<!-- </element> -->
+			<!-- <element> -->
+			<!-- <list type="java.lang.ArrayList" elementType="int"> -->
+			<!-- <element>value</element> -->
+			<!-- <element>value</element> -->
+			<!-- <element>value</element> -->
+			<!-- </list> -->
+			<!-- </element> -->
+			<!-- </list> -->
+			<!-- </property> -->
+			<!-- <property id="listOflistRefExam" dataType="list"> -->
+			<!-- <list type="java.lang.ArrayList" elementType="list"> -->
+			<!-- <element> -->
+			<!-- <list type="java.lang.ArrayList" -->
+			<!-- elementType="com.lalit.api.di.design.setterInjection.example.AImplVersion1"> -->
+			<!-- <element>aImplVersion1_1</element> -->
+			<!-- </list> -->
+			<!-- </element> -->
+			<!-- <element> -->
+			<!-- <list type="java.lang.ArrayList" -->
+			<!-- elementType="com.lalit.api.di.design.setterInjection.example.AImplVersion1"> -->
+			<!-- <element>aImplVersion1_2</element> -->
+			<!-- </list> -->
+			<!-- </element> -->
+			<!-- </list> -->
+			<!-- </property> -->
+			<!-- TODO Map Scenarios -->
+			<!-- TODO Set Scenarios -->
 		</SetterInjection>
+		<!-- Map Scenarios -->
+		<bean id="aImplVersion1_1">
+			<name>com.lalit.api.di.design.setterInjection.example.AImplVersion1
+			</name>
+			<SetterInjection>
+				<property id="cClass" value-ref="cImplVersion1" />
+			</SetterInjection>
+		</bean>
+		<bean id="aImplVersion1_2">
+			<name>com.lalit.api.di.design.setterInjection.example.AImplVersion1
+			</name>
+			<SetterInjection>
+				<property id="cClass" value-ref="cImplVersion1" />
+			</SetterInjection>
+		</bean>
 	</bean>
 	<bean id="cImplVersion1">
-		<name>com.lalit.api.di.design.setterInjection.example.CImplVersion1</name>
+		<name>com.lalit.api.di.design.setterInjection.example.CImplVersion1
+		</name>
 	</bean>
 </beans>
