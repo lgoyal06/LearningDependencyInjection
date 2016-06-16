@@ -25,11 +25,18 @@ import nu.xom.Nodes;
 public class DIContextImpl implements IDIContext {
 
 	private static final Map<String, Object> mapOfBeansInstance = new LinkedHashMap<>();
-
+/**
+*
+* TODO Add another function that returns Bean object based upon the Class object passed to method
+* by 20th June
+**/
 	public Object getBean(String beanId) {
 		return mapOfBeansInstance.get(beanId);
 	}
-
+/**
+ * TODO Add code to dynamically pick xml file 
+ * Code to pass the File path in Constructor by 20th June
+ * */
 	public DIContextImpl() throws ClassNotFoundException, NoSuchFieldException, SecurityException,
 			IllegalArgumentException, IllegalAccessException, InstantiationException {
 		try {
@@ -253,8 +260,11 @@ public class DIContextImpl implements IDIContext {
 		}
 	}
 
-	// Collection can be List, Map and Set
-	// First we are targeting List then Map ............then Set
+	/** TODO :Collection can be List, Map and Set
+	* First we are targeting List then Map ............then Set
+	*
+	* 
+	**/
 	private void injectCollectionTypeFieldDependency(String value, String dataType, Object parentClassInstance,
 			String fieldName) throws NoSuchFieldException, IllegalAccessException, InstantiationException,
 					ClassNotFoundException {
@@ -267,10 +277,11 @@ public class DIContextImpl implements IDIContext {
 		}
 	}
 
-	// TODO : Generic type can be
-	// > primitive
-	// > other bean object
-	// > collection object
+	/** TODO: Generic type can be
+	// > primitive TODO by 16th June
+	// > other bean object TODO by 18th June
+	// > collection object TODO by 20 th June
+	**/
 	private String fetchGenericTypeOfField(Field field) {
 
 		return null;
