@@ -1,4 +1,4 @@
-package com.lalit.api.di.design.setterInjection.example;
+package com.lalit.api.di.design.beans.classes;
 
 public interface ICImpl {
 

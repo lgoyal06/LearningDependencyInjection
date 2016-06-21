@@ -3,13 +3,14 @@ package com.lalit.api.di.design.core.context;
 /**
  * @author lalit goyal
  * 
- *         TODO Apply design approah
+ *         TODO Apply design approach
  * 
  */
 public interface IDIContext {
 
 	public Object getBean(String beanId);
 
-	// Return the generic type i.e. Specific Class Object
-	// public T getBean(String beanId, Class<T> clazz);
+	public <T> T getBean(String beanId, Class<T> classType);
+
+	public <T> T getBean(Class<T> classType);
 }

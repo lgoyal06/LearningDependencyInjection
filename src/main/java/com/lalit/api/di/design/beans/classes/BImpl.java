@@ -1,15 +1,20 @@
-package com.lalit.api.di.design.setterInjection.example;
+package com.lalit.api.di.design.beans.classes;
+
+import java.util.Stack;
 
 public class BImpl {
 
-	public BImpl(AInterface aClass, ICImpl cImpl, int x, boolean b) {
+	public BImpl(AInterface aClass, ICImpl cImpl, int x, boolean b, Stack stack) {
 		this.aClass = aClass;
 		this.cImpl = cImpl;
 		this.x = x;
 		this.b = b;
+		this.stack = stack;
 	}
 
 	private AInterface aClass;
+
+	private Stack stack;
 
 	private int x;
 
@@ -18,6 +23,14 @@ public class BImpl {
 	private AInterface aClass1;
 
 	private ICImpl cImpl;
+
+	public Stack getStack() {
+		return stack;
+	}
+
+	public void setStack(Stack stack) {
+		this.stack = stack;
+	}
 
 	public void setaClass1(AInterface aClass1) {
 		this.aClass1 = aClass1;
