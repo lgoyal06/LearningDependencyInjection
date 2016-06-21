@@ -25,6 +25,9 @@ import nu.xom.Nodes;
  *         use Design Pattern
  * 
  *         SOLID Principal
+ * 
+ *         Start practice of adding java docs for each method to understand
+ *         Purpose of method
  *
  */
 public class DIContextImpl implements IDIContext {
@@ -283,10 +286,12 @@ public class DIContextImpl implements IDIContext {
 	}
 
 	/**
-	 * TODO :Collection can be List, Map and Set First we are targeting List
-	 * then Map ............then Set
+	 * TODO :22 - 24th June 16 Collection can be List, Map and Set First we are
+	 * targeting List then Map ............then Set
 	 *
-	 * 
+	 * TODO 25th - 28th June 16Also we should look for inner classes dependency
+	 * Also in case Any Object will have generic type associated like for Stack,
+	 * queue in collection and for user defined class like A<String>
 	 **/
 	private void injectCollectionTypeSetterDependency(Object parentClassInstance, String fieldName,
 			Element elementInjected) throws NoSuchFieldException, IllegalAccessException, InstantiationException,
